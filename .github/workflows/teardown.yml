@@ -1,0 +1,48 @@
+name: Tear down demo cluster
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment to tear down
+        required: true
+        type: environment
+      confirm:
+        description: Type the environment name again to confirm deletion
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: cluster-${{ inputs.environment }}
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      RESOURCE_GROUP: rg-cilium-aks-${{ inputs.environment }}
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != inputs.environment
+        run: |
+          echo "::error::Confirmation does not match environment name."
+          exit 1
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete resource group
+        run: |
+          if [ "$(az group exists -n "$RESOURCE_GROUP")" = "true" ]; then
+            az group delete -n "$RESOURCE_GROUP" --yes
+            echo "Deleted $RESOURCE_GROUP" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Resource group $RESOURCE_GROUP does not exist, nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          fi

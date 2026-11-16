@@ -1,0 +1,73 @@
+name: Deploy demo cluster
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment to deploy to (holds Azure credentials)
+        required: true
+        type: environment
+      location:
+        description: Azure region
+        required: false
+        default: westeurope
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: cluster-${{ inputs.environment }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ENVIRONMENT_NAME: ${{ inputs.environment }}
+      AZURE_LOCATION: ${{ inputs.location }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if
+        run: |
+          az deployment sub what-if \
+            --name "cilium-aks-${ENVIRONMENT_NAME}" \
+            --location "$AZURE_LOCATION" \
+            --parameters infra/main.bicepparam
+
+      - name: Deploy
+        id: deploy
+        run: |
+          outputs=$(az deployment sub create \
+            --name "cilium-aks-${ENVIRONMENT_NAME}" \
+            --location "$AZURE_LOCATION" \
+            --parameters infra/main.bicepparam \
+            --query properties.outputs -o json)
+          echo "rg=$(jq -r .resourceGroupName.value <<<"$outputs")" >> "$GITHUB_OUTPUT"
+          echo "cluster=$(jq -r .clusterName.value <<<"$outputs")" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        run: |
+          az aks get-credentials -g "${{ steps.deploy.outputs.rg }}" -n "${{ steps.deploy.outputs.cluster }}" --overwrite-existing
+          kubectl get nodes -o wide
+          kubectl -n kube-system get pods -l k8s-app=cilium
+
+      - name: Summary
+        run: |
+          {
+            echo "### Cluster deployed :rocket:"
+            echo "- Resource group: \`${{ steps.deploy.outputs.rg }}\`"
+            echo "- Cluster: \`${{ steps.deploy.outputs.cluster }}\`"
+            echo
+            echo '```bash'
+            echo "az aks get-credentials -g ${{ steps.deploy.outputs.rg }} -n ${{ steps.deploy.outputs.cluster }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
