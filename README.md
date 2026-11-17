@@ -18,7 +18,7 @@ infra/               Bicep IaC for the AKS cluster (Azure CNI powered by Cilium)
 - Resource group `rg-cilium-aks-<environment>`
 - AKS cluster `aks-cilium-<environment>` with:
   - Azure CNI overlay, **Cilium dataplane** and **Cilium network policy**
-  - Optional Advanced Container Networking Services (Hubble observability, L7/FQDN policies)
+  - Advanced Container Networking Services (ACNS) enabled by default, with Hubble observability and `L7` policy mode (HTTP rules and FQDN filtering). Set `enableAdvancedNetworking` to `false` to omit ACNS configuration.
 
 ## Pipelines
 

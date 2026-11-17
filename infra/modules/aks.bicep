@@ -11,12 +11,12 @@ param nodeVmSize string = 'Standard_D4s_v5'
 @minValue(1)
 param nodeCount int = 2
 
-@description('Enable Advanced Container Networking Services (Hubble observability, FQDN filtering).')
+@description('Enable Advanced Container Networking Services (Hubble observability, L7 policies, and FQDN filtering).')
 param enableAdvancedNetworking bool = true
 
 param tags object = {}
 
-resource aks 'Microsoft.ContainerService/managedClusters@2025-01-01' = {
+resource aks 'Microsoft.ContainerService/managedClusters@2025-08-01' = {
   name: clusterName
   location: location
   tags: tags
@@ -51,6 +51,7 @@ resource aks 'Microsoft.ContainerService/managedClusters@2025-01-01' = {
             }
             security: {
               enabled: true
+              advancedNetworkPolicies: 'L7'
             }
           }
         : null
