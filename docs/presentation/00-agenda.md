@@ -9,10 +9,13 @@
 2. **Cilium on AKS**
    - Azure CNI powered by Cilium and its AKS implementation
    - Deployment considerations and managed capabilities
-3. **Observability with Hubble**
+3. **Network segregation and policies with Cilium**
+   - Segregating workloads using network policies
+   - Creating ingress and egress policies
+4. **Observability with Hubble**
    - Network flows and visibility into application communication
    - Exploring traffic and troubleshooting connectivity
-4. **Wrap-up**
+5. **Wrap-up**
    - Key takeaways and additional resources
    - Questions and answers
 
