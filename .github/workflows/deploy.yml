@@ -10,7 +10,7 @@ on:
       location:
         description: Azure region
         required: false
-        default: westeurope
+        default: francecentral
 
 permissions:
   id-token: write
